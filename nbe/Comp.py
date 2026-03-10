@@ -12,38 +12,20 @@ from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
-
 # Databricks notebook source
 # COMMAND ----------
-# Cell 2 — Parameters / Config
+# Cell 1 — Imports
 
-# Required columns
-CUSTOMER_ID_COL = "customer_id"
-CONTROL_COL = "control"
+from typing import List, Optional, Sequence, Union
 
-# Example product list
-# Replace this with your actual product columns, or generate it automatically if needed.
-PRODUCT_COLS = [
-    "product_1", "product_2", "product_3", "product_4", "product_5",
-    "product_6", "product_7", "product_8", "product_9", "product_10",
-    "product_11", "product_12", "product_13", "product_14", "product_15",
-    "product_16", "product_17", "product_18", "product_19", "product_20",
-    "product_21", "product_22", "product_23", "product_24", "product_25",
-    "product_26", "product_27", "product_28", "product_29", "product_30",
-    "product_31", "product_32", "product_33", "product_34", "product_35",
-    "product_36", "product_37",
-]
+import math
+import pandas as pd
+import matplotlib.pyplot as plt
 
-# Top-K / Top-N values to evaluate
-TOP_K_VALUES = [1, 3, 5]
-TOP_N_VALUES = [1, 3, 5, 10]
+from pyspark.sql import DataFrame
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
 
-# Ranking behavior
-# Null expected values are treated as 0.0 in all computations below.
-NULL_FILL_VALUE = 0.0
-
-# Plotting
-PANDAS_SAMPLE_MAX_ROWS = 200000
 # Databricks notebook source
 # COMMAND ----------
 # Cell 3 — Subsetting Helpers
@@ -152,6 +134,7 @@ def get_product_cols_from_df(
     Infer product columns as all columns except customer_id and control.
     """
     return [c for c in df.columns if c not in {customer_id_col, control_col}]
+
 
 # Databricks notebook source
 # COMMAND ----------
@@ -638,7 +621,7 @@ def compute_product_distribution_shift(
         .join(new_freq, on="product", how="full")
         .na.fill(0)
         .orderBy("product")
-)
+    )
 
 # Databricks notebook source
 # COMMAND ----------
@@ -798,7 +781,6 @@ def plot_product_distribution_shift(
     plt.tight_layout()
     plt.show()
 
-
 # Databricks notebook source
 # COMMAND ----------
 # Cell 6 — Example Analysis Flow: Prepare data
@@ -848,7 +830,6 @@ print(f"New rows:    {new_base.count():,}")
 
 display(legacy_base.limit(5))
 display(new_base.limit(5))
-
 
 # Databricks notebook source
 # COMMAND ----------
@@ -901,162 +882,50 @@ plot_metric_comparison(
 
 # Databricks notebook source
 # COMMAND ----------
-# Cell 5 — Plot / Summary Helpers
+# Cell 8 — Expected Value of Top-K Products
 
-def summarize_metric(
-    df: DataFrame,
-    metric_col: str
-) -> DataFrame:
-    """
-    Spark summary table for a single metric column.
-    """
-    return df.select(metric_col).summary(
-        "count", "mean", "stddev", "min", "25%", "50%", "75%", "max"
+topk_ev_results = {}
+
+for k in TOP_K_VALUES:
+    legacy_topk_ev = compute_topk_expected_value(
+        legacy_base,
+        k=k,
+        product_cols=analysis_product_cols,
+        output_col="EV_topK",
+        customer_id_col=CUSTOMER_ID_COL,
+        control_col=CONTROL_COL
     )
 
-
-def compare_metric_summary(
-    legacy_metric_df: DataFrame,
-    new_metric_df: DataFrame,
-    metric_col: str,
-    customer_id_col: str = CUSTOMER_ID_COL
-) -> DataFrame:
-    """
-    Join legacy and new metric outputs and return summary stats for both.
-    """
-    joined = (
-        legacy_metric_df.select(customer_id_col, F.col(metric_col).alias(f"{metric_col}_legacy"))
-        .join(
-            new_metric_df.select(customer_id_col, F.col(metric_col).alias(f"{metric_col}_new")),
-            on=customer_id_col,
-            how="inner"
-        )
+    new_topk_ev = compute_topk_expected_value(
+        new_base,
+        k=k,
+        product_cols=analysis_product_cols,
+        output_col="EV_topK",
+        customer_id_col=CUSTOMER_ID_COL,
+        control_col=CONTROL_COL
     )
 
-    return joined.summary(
-        "count", "mean", "stddev", "min", "25%", "50%", "75%", "max"
+    topk_ev_results[k] = {
+        "legacy": legacy_topk_ev,
+        "new": new_topk_ev
+    }
+
+    print(f"Top-{k} expected value summary")
+    display(compare_metric_summary(
+        legacy_topk_ev,
+        new_topk_ev,
+        metric_col="EV_topK",
+        customer_id_col=CUSTOMER_ID_COL
+    ))
+
+    plot_metric_comparison(
+        legacy_topk_ev,
+        new_topk_ev,
+        metric_col="EV_topK",
+        customer_id_col=CUSTOMER_ID_COL,
+        bins=50,
+        title=f"Top-{k} Expected Value: legacy vs new"
     )
-
-
-def metric_difference_table(
-    legacy_metric_df: DataFrame,
-    new_metric_df: DataFrame,
-    metric_col: str,
-    customer_id_col: str = CUSTOMER_ID_COL,
-    diff_col: str = "metric_diff"
-) -> DataFrame:
-    """
-    Return a customer-level joined table with old, new, and difference.
-    """
-    return (
-        legacy_metric_df.select(customer_id_col, F.col(metric_col).alias(f"{metric_col}_legacy"))
-        .join(
-            new_metric_df.select(customer_id_col, F.col(metric_col).alias(f"{metric_col}_new")),
-            on=customer_id_col,
-            how="inner"
-        )
-        .withColumn(
-            diff_col,
-            F.col(f"{metric_col}_new") - F.col(f"{metric_col}_legacy")
-        )
-    )
-
-
-def to_pandas_sample(
-    df: DataFrame,
-    max_rows: int = PANDAS_SAMPLE_MAX_ROWS
-) -> pd.DataFrame:
-    """
-    Convert a Spark DataFrame to pandas, optionally limiting rows first.
-    Useful for plotting.
-    """
-    return df.limit(max_rows).toPandas()
-
-
-def plot_single_distribution(
-    df: DataFrame,
-    metric_col: str,
-    title: Optional[str] = None,
-    bins: int = 50,
-    max_rows: int = PANDAS_SAMPLE_MAX_ROWS
-):
-    """
-    Plot one metric distribution.
-    """
-    pdf = to_pandas_sample(df.select(metric_col), max_rows=max_rows)
-
-    plt.figure(figsize=(8, 5))
-    plt.hist(pdf[metric_col].dropna(), bins=bins)
-    plt.title(title or metric_col)
-    plt.xlabel(metric_col)
-    plt.ylabel("Count")
-    plt.show()
-
-
-def plot_metric_comparison(
-    legacy_metric_df: DataFrame,
-    new_metric_df: DataFrame,
-    metric_col: str,
-    customer_id_col: str = CUSTOMER_ID_COL,
-    bins: int = 50,
-    max_rows: int = PANDAS_SAMPLE_MAX_ROWS,
-    title: Optional[str] = None
-):
-    """
-    Plot legacy vs new metric distributions on the same chart.
-    """
-    legacy_pdf = to_pandas_sample(
-        legacy_metric_df.select(customer_id_col, metric_col),
-        max_rows=max_rows
-    )
-    new_pdf = to_pandas_sample(
-        new_metric_df.select(customer_id_col, metric_col),
-        max_rows=max_rows
-    )
-
-    plt.figure(figsize=(8, 5))
-    plt.hist(legacy_pdf[metric_col].dropna(), bins=bins, alpha=0.5, label="legacy")
-    plt.hist(new_pdf[metric_col].dropna(), bins=bins, alpha=0.5, label="new")
-    plt.title(title or f"{metric_col}: legacy vs new")
-    plt.xlabel(metric_col)
-    plt.ylabel("Count")
-    plt.legend()
-    plt.show()
-
-
-def plot_product_distribution_shift(
-    product_shift_df: DataFrame,
-    top_n_products: int = 30,
-    order_by_abs_diff: bool = True
-):
-    """
-    Plot product top-K appearance frequencies for legacy vs new.
-    """
-    df_plot = product_shift_df
-
-    if order_by_abs_diff:
-        df_plot = df_plot.withColumn(
-            "abs_diff",
-            F.abs(F.col("new_topK_pct") - F.col("legacy_topK_pct"))
-        ).orderBy(F.desc("abs_diff"))
-    else:
-        df_plot = df_plot.orderBy("product")
-
-    pdf = df_plot.limit(top_n_products).toPandas()
-
-    x = range(len(pdf))
-    width = 0.4
-
-    plt.figure(figsize=(14, 6))
-    plt.bar([i - width / 2 for i in x], pdf["legacy_topK_pct"], width=width, label="legacy")
-    plt.bar([i + width / 2 for i in x], pdf["new_topK_pct"], width=width, label="new")
-    plt.xticks(list(x), pdf["product"], rotation=90)
-    plt.ylabel("Top-K frequency %")
-    plt.title("Product distribution shift in Top-K")
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
 
 # Databricks notebook source
 # COMMAND ----------
@@ -1079,7 +948,6 @@ plot_single_distribution(
     metric_col="rank_correlation",
     title="Full Rank Correlation"
 )
-
 
 # Databricks notebook source
 # COMMAND ----------
@@ -1109,7 +977,6 @@ for n in TOP_N_VALUES:
         title=f"Top-{n} Rank Correlation"
     )
 
-
 # Databricks notebook source
 # COMMAND ----------
 # Cell 11 — Top-K Overlap
@@ -1138,7 +1005,6 @@ for k in TOP_K_VALUES:
         title=f"Top-{k} Overlap"
     )
 
-
 # Databricks notebook source
 # COMMAND ----------
 # Cell 12 — Top-K Swap Rate
@@ -1166,7 +1032,6 @@ for k in TOP_K_VALUES:
     print(f"Top-{k} swap rate")
     display(swap_summary)
     display(topk_swap.limit(10))
-
 
 # Databricks notebook source
 # COMMAND ----------
@@ -1270,7 +1135,6 @@ if changed_products:
 
     print("Changed-products EV diff summary")
     display(changed_diff.summary("count", "mean", "stddev", "min", "25%", "50%", "75%", "max"))
-
 
 # Databricks notebook source
 # COMMAND ----------
