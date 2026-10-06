@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lumen AI — Shapley-based attribution</title>
+<style>
+:root{--green:#136343;--ink:#172d25;--line:#cddad2;--wash:#edf4ef}*{box-sizing:border-box}body{margin:0;background:#e5ebe7;color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.35}.toolbar{max-width:1280px;margin:18px auto;display:flex;justify-content:space-between;align-items:center;padding:0 14px;font-size:14px}button{font:inherit;background:white;border:1px solid var(--line);padding:8px 14px;cursor:pointer}.page{width:1280px;min-height:960px;margin:24px auto;background:white;padding:32px 56px 26px;display:flex;flex-direction:column;border-top:9px solid var(--green)}.brand{font-size:15px;letter-spacing:1.1px;text-transform:uppercase;color:var(--green);margin-bottom:13px}h1{font-size:43px;line-height:1.1;letter-spacing:-1px;margin:0 0 16px;font-weight:650}h2{font-size:25px;color:var(--green);margin:0 0 16px}h3{font-size:22px;margin:0 0 7px}.lead{font-size:24px;margin:0 0 22px}p{margin:0 0 14px}.cols{display:grid;grid-template-columns:1fr 1.05fr;gap:48px}.cols.equal{grid-template-columns:1fr 1fr}.body{font-size:22px}.features{width:100%;border-collapse:collapse;font-size:21px}.features td{border-bottom:1px solid var(--line);padding:13px 0;vertical-align:top}.features td:first-child{width:185px;padding-right:18px;font-weight:bold}.option{border-bottom:1px solid var(--line);padding:11px 16px}.option:first-of-type{border-top:1px solid var(--line)}.option p{margin:0;font-size:20px}.selected{background:var(--wash);border-left:5px solid var(--green);padding-left:16px}.label{display:block;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:1px;color:var(--green);font-weight:bold;text-transform:uppercase;margin-bottom:7px}.math{font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.45}.option .math{font-size:25px;margin:5px 0 0}.time{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:25px;margin-top:23px;padding-top:16px;border-top:2px solid var(--green);font-size:22px}.time b{display:block;font-size:25px;color:var(--green);margin-bottom:5px}.band{margin-top:18px;padding:16px 20px;background:var(--wash);font-size:22px}.foot{margin-top:auto;padding-top:16px;display:flex;justify-content:space-between;font-size:14px;color:var(--green)}.allocation .option{padding-top:12px;padding-bottom:12px}.allocation h3{font-size:22px}.definitions{font-size:19px;margin:20px 0 0;line-height:1.65}.definitions .math{font-size:23px}.group{margin:21px 0 0;font-size:21px}.pipeline{display:flex;align-items:center;gap:18px;margin-top:20px;font-size:21px}.block{border:1px solid var(--green);padding:17px 20px;flex:1;text-align:center}.arrow{font-size:30px;color:var(--green)}.delivery{grid-template-columns:1.1fr 1fr;gap:45px}.priority{font-size:26px;letter-spacing:1px;color:var(--green);margin:5px 0 22px;font-weight:bold}.package{border-left:5px solid var(--green);padding:13px 22px;background:var(--wash);margin-bottom:16px}.package h2{margin-bottom:8px}.package p{font-size:23px;margin:0}.deliverable{font-size:21px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:13px}.deliverable b{display:block;margin-bottom:5px}.status p{font-size:20px}.placeholder{border:1px dashed #6b9480;padding:22px;margin-top:24px;min-height:150px;font-size:21px}.placeholder h3{color:var(--green)}.constraint{font-size:20px;margin-top:18px}.decision{background:var(--green);color:white;padding:15px 24px;margin-top:20px;font-size:22px}.decision b{display:block;margin-bottom:5px}sub,sup{font-size:.7em}.zero{font-size:16px;margin-top:9px}
+@media(max-width:1300px){.page{width:calc(100% - 32px)}.toolbar{width:calc(100% - 32px)}}
+@media(max-width:800px){.page{padding:26px;min-height:0}.cols,.cols.equal,.delivery{grid-template-columns:1fr;gap:28px}h1{font-size:34px}.time{grid-template-columns:1fr}.pipeline{flex-direction:column;align-items:stretch}.arrow{text-align:center;transform:rotate(90deg)}.lead{font-size:22px}.features td:first-child{width:150px}.foot{font-size:12px}}
+@page{size:13.333in 10in;margin:0}
+@media print{body{background:white}.toolbar{display:none}.page{width:1280px;height:960px;min-height:0;margin:0;break-after:page;page-break-after:always;overflow:hidden}.page:last-of-type{break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+.cite{font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:0;white-space:nowrap;margin-left:5px;font-weight:normal}.cite a{color:var(--green);text-decoration:none}.page-bottom{margin-top:auto;padding-top:17px}.references{border-top:1px solid var(--line);padding-top:10px;font-size:14px;line-height:1.55;color:var(--ink)}.references a{color:inherit;text-decoration:none}.references a:hover,.cite a:hover{text-decoration:underline}.foot{margin-top:0;padding-top:8px}.comparison-tag{font-size:15px;font-weight:normal}.explainer .option{padding-top:9px;padding-bottom:9px}.explainer .option .math{font-size:24px}.explainer h3{font-size:21px}.explainer .group{font-size:19px;margin-top:14px}.explanation-key{font-size:17px;margin:15px 0 0}.allocation .definitions{margin-top:15px}#attribution .lead{margin-bottom:18px}#attribution h2{margin-bottom:12px}
+</style></head><body>
+<div class="toolbar"><span>Manager discussion · October 2026 · 3 pages</span><button onclick="window.print()">Print / Save PDF</button></div>
+<section class="page" id="response-model">
+<div class="brand">Lumen AI · Main candidate: Shapley-based attribution</div>
+<h1>Response model: features and model options</h1>
+<p class="lead">Predict each conversion target from the customer’s interaction history.<sup class="cite"><a href="https://fosterprovost.com/wp-content/uploads/2019/07/CAUSALLY-MOTIVATED-ATTRIBUTION.pdf">[1]</a></sup></p>
+<div class="cols body"><div><h2>Features</h2><p>All available touchpoint and interaction types across LOBs.</p>
+<table class="features"><tr><td>RECENCY</td><td>Time since the latest interaction</td></tr><tr><td>COUNT</td><td>Number of interactions</td></tr><tr><td>DECAY<sup class="cite"><a href="https://jds-online.org/journal/JDS/article/1336/file/pdf">[2]</a></sup></td><td>7, 30, 60, 90, 180 and 360 days</td></tr><tr><td>PRISM [optional]</td><td>Historical propensity scores</td></tr></table>
+</div><div><h2>Model options</h2>
+<div class="option selected"><span class="label">Current approach</span><h3>Binary per conversion × target</h3><p class="math">p̂<sub>o</sub> = f<sub>o</sub>(X)</p></div>
+<div class="option"><h3>Multiclass</h3><p class="math">p̂<sub>k</sub> = P(Y = k | X)</p></div>
+<div class="option"><h3>Pooled binary</h3><p class="math">p̂<sub>o</sub> = f(X, o)</p></div>
+<p style="font-size:19px;margin:13px 16px 0">o = conversion type × target LOB</p>
+</div></div>
+<div class="time"><div><b>1 year</b>Interaction history before t</div><div><b>1 day</b>Between snapshots</div><div><b>1 day</b>Conversion horizon after t</div></div>
+<div class="band"><b>Current build:</b> XGBoost · train on Q2 FY2026 · evaluate on Q2 and Q3</div>
+<div class="page-bottom"><div class="references"><div><a href="https://fosterprovost.com/wp-content/uploads/2019/07/CAUSALLY-MOTIVATED-ATTRIBUTION.pdf">[1] Dalessandro et al. (2012), Causally Motivated Attribution for Online Advertising, §§3.2, 4.1 — response-model MTA</a></div><div><a href="https://jds-online.org/journal/JDS/article/1336/file/pdf">[2] Shender et al. (2024), A Time To Event Framework For Multi-touch Attribution, §3.1.1 — temporal decay bases</a></div></div><div class="foot"><span>Response model</span><span>01 / 03</span></div></div>
+</section>
+<section class="page" id="attribution">
+<div class="brand">Methodology · Shapley explainers and removal comparator</div>
+<h1>Explainer methods and fractional attribution</h1>
+<p class="lead">Explain the response model, then allocate conversion credit.<sup class="cite"><a href="https://fosterprovost.com/wp-content/uploads/2019/07/CAUSALLY-MOTIVATED-ATTRIBUTION.pdf">[1]</a></sup></p>
+<div class="cols equal"><div class="explainer"><h2>Explainer options</h2>
+<div class="option"><h3>TreeSHAP</h3><p>Feature contributions → sum within groups</p></div>
+<div class="option selected"><span class="label">Main candidate</span><h3>GroupSHAP</h3><p class="math">φ<sub>g</sub> = E<sub>π</sub>[v(S<sub>π,g</sub> ∪ {g}) − v(S<sub>π,g</sub>)]</p></div>
+<div class="option"><h3>Hierarchical SHAP / Owen</h3><p>Channel → LOB → interaction type</p></div>
+<div class="option"><h3>Leave-one-group-out <span class="comparison-tag">· comparator</span></h3><p class="math">d<sub>g</sub> = v(G) − v(G ∖ {g})</p><p>Switch off one group; keep the model fixed.</p></div><p class="group"><b>Groups:</b> channel, or channel × LOB / type</p>
+</div><div class="allocation"><h2>Attribution options</h2>
+<div class="option selected"><span class="label">Main option</span><h3>Negative residual</h3><p class="math">a<sub>g</sub> = φ<sub>g</sub><sup>+</sup> / (P + N)<br>u = N / (P + N)</p></div>
+<div class="option"><h3>Positive only</h3><p class="math">a<sub>g</sub> = φ<sub>g</sub><sup>+</sup> / P &nbsp; ; &nbsp; u = 0</p></div>
+<div class="option"><h3>Signed net</h3><p class="math">a<sub>g</sub> = φ<sub>g</sub> / (P − N)</p></div>
+<div class="definitions"><span class="math">P = Σ φ<sub>g</sub><sup>+</sup> &nbsp; · &nbsp; N = Σ max(−φ<sub>g</sub>, 0)</span><br>φ<sub>g</sub><sup>+</sup> = max(φ<sub>g</sub>, 0) · a = credit · u = unattributed</div>
+<p class="zero">Signed net: negative percentages allowed; net credit = 100%.</p>
+</div></div>
+<p class="explanation-key">v(S): prediction with groups S retained · G: all groups · S<sub>π,g</sub>: groups before g in order π</p><div class="page-bottom"><div class="references"><div><a href="https://fosterprovost.com/wp-content/uploads/2019/07/CAUSALLY-MOTIVATED-ATTRIBUTION.pdf">[1] Dalessandro et al. (2012), Causally Motivated Attribution for Online Advertising, §§3.2, 4.1 — response-model MTA</a></div></div><div class="foot"><span>Main candidate: pure Shapley-based attribution · Leave-one-group-out: separate comparator</span><span>02 / 03</span></div></div>
+</section>
+<section class="page" id="delivery">
+<div class="brand">Current status · Delivery discussion</div>
+<h1>Candidate delivery: package + working example</h1>
+<p class="lead">One example explaining Q2 or Q3 FY2026 for a couple of LOBs.</p>
+<div class="cols delivery"><div>
+<h2>Priority LOB group</h2><p class="priority">CC &nbsp; · &nbsp; EDB &nbsp; · &nbsp; DI &nbsp; · &nbsp; RESL</p>
+<div class="package"><h2>Package</h2><p>Response model → Shapley explanation → fractional attribution<sup class="cite"><a href="https://fosterprovost.com/wp-content/uploads/2019/07/CAUSALLY-MOTIVATED-ATTRIBUTION.pdf">[1]</a></sup></p></div>
+<div class="deliverable"><b>Final presentation</b>Fractional attribution results and comparisons against the current method.</div>
+<div class="deliverable"><b>Stretch: Q3 only</b>Extend to all LOBs and conversion types.</div>
+<p class="constraint"><b>Beyond next week:</b> all-quarter coverage.<br><b>Constraint:</b> slow cluster runtime, even for small XGBoost runs.</p>
+</div><div class="status"><h2>Current work</h2>
+<p><b>Training:</b> binary models on Q2; evaluation on Q2 and Q3.</p>
+<p><b>PRISM:</b> extending the comparison; little difference in early experiments.</p>
+<p><b>Further optimization:</b> feature selection and additional multiclass experiments; little difference in initial multiclass tests.</p>
+<div class="placeholder"><h3>Results — to insert</h3><p>Fractional attribution by channel / LOB / conversion type</p><p>Comparison against current attribution</p></div>
+</div></div>
+<div class="decision"><b>Decision requested</b>Which couple of LOBs, which quarter, and what package / presentation detail should define next week’s delivery?</div>
+<div class="page-bottom"><div class="references"><div><a href="https://fosterprovost.com/wp-content/uploads/2019/07/CAUSALLY-MOTIVATED-ATTRIBUTION.pdf">[1] Dalessandro et al. (2012), Causally Motivated Attribution for Online Advertising, §§3.2, 4.1 — response-model MTA</a></div></div><div class="foot"><span>Candidate delivery · Shapley-based main package</span><span>03 / 03</span></div></div>
+</section></body></html>
